@@ -1,5 +1,5 @@
 TARGET = test
-LIBS = -lm -lrt
+LIBS = -lm -pthread
 CC = gcc
 CFLAGS = -g -Wall
 
