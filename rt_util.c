@@ -1,6 +1,6 @@
 #include "rt_util.h"
 
-inline void
+void
 schedule(pid_t pid, int policy, const struct sched_param param)
 {
     if(sched_setscheduler(pid, policy, &param) == -1)
@@ -10,27 +10,27 @@ schedule(pid_t pid, int policy, const struct sched_param param)
     }
 }
 
-inline void
+void
 increment_time(struct timespec *t, unsigned long tm)
 {
     t->tv_sec += tm;
 }
 
-inline void
+void
 increment_time_u(struct timespec *t, unsigned long tm)
 {
     t->tv_nsec += tm;
 }
 
 
-inline void
+void
 copy_time(struct timespec *src, struct timespec *dest)
 {
         dest->tv_nsec = src->tv_nsec;
         dest->tv_sec = src->tv_sec;
 }
 
-inline void
+void
 normalise_time(struct timespec *t)
 {
     while (t->tv_nsec >= NSEC_PER_SEC)
@@ -51,7 +51,8 @@ stack_prefault(void)
 thread_params *
 create_thread_params(unsigned int priority, unsigned int delay,
                      unsigned long ndelay, unsigned long interval,
-                     unsigned char thread_id, last_thread *lt)
+                     unsigned char thread_id, last_thread *lt,
+                     thread_pool *pool)
 {
     thread_params *tp;
 
@@ -62,6 +63,7 @@ create_thread_params(unsigned int priority, unsigned int delay,
     tp->interval = interval;
     tp->thread_id = thread_id;
     tp->lt = lt;
+    tp->tp = pool;
 
     return tp;
 }
@@ -89,11 +91,25 @@ create_last_thread()
     return lt;
 }
 
+struct thread_pool *
+create_thread_pool()
+{
+    thread_pool *tp;
+
+    tp = (struct thread_pool *) malloc(sizeof(struct thread_pool));
+
+    tp->input  = (unsigned char *) calloc(DATA_SIZE, sizeof(unsigned char));
+    tp->output = (unsigned char *) calloc(DATA_SIZE, sizeof(unsigned char));
+    tp->count  = (unsigned long *) calloc(BIN_SIZE,  sizeof(unsigned long));
+
+    return tp;
+}
+
 /*
  * Dump thread data to stderr. Can be wrong because
  * thread data is shared.
  */
-inline void
+void
 dump_last_thread_data(unsigned int thread_id, char *message, last_thread *lt)
 {
     fprintf(
@@ -110,7 +126,7 @@ dump_last_thread_data(unsigned int thread_id, char *message, last_thread *lt)
     );
 }
 
-inline void
+void
 begin_thread_block(unsigned int thread_id, last_thread *lt)
 {
     if (pthread_mutex_trylock(&lt->mutex) != 0)
@@ -146,7 +162,7 @@ begin_thread_block(unsigned int thread_id, last_thread *lt)
     pthread_mutex_unlock(&lt->mutex);
 }
 
-inline void
+void
 end_thread_block(unsigned int thread_id, last_thread *lt)
 {
     if (pthread_mutex_trylock(&lt->mutex) != 0)
@@ -160,10 +176,13 @@ end_thread_block(unsigned int thread_id, last_thread *lt)
     };
 
     struct timespec ets;
-    unsigned long end_time = clock_gettime(CLOCK_MONOTONIC, &ets);
+    clock_gettime(CLOCK_MONOTONIC, &ets);
+    unsigned long end_time = ets.tv_nsec;
 
     /* All clear, set our own state */
     lt->state = JOB_STATE_DONE;
     lt->end_time = end_time;
     pthread_mutex_unlock(&lt->mutex);
+
+    printf("Job %d took %lu nsec\n", thread_id, lt->end_time - lt->start_time);
 }

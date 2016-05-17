@@ -18,6 +18,8 @@ generate(void *arg)
 
     last_thread *lt         = tp->lt;
 
+    thread_pool *pool       = tp->tp;
+
     struct timespec last_time;
     struct sched_param param;
 
@@ -30,11 +32,14 @@ generate(void *arg)
         exit(-2);
     }
 
-    stack_prefault();
+    //stack_prefault();
+    srand(time(NULL));
 
     clock_gettime(CLOCK_MONOTONIC, &last_time);
 
     last_time.tv_sec += DELAY;
+
+    printf("%p\n", pool);
 
     while(1)
     {
@@ -44,7 +49,10 @@ generate(void *arg)
         begin_thread_block(THREAD_ID, lt);
 
         /* Processing */
-        fprintf(stdout, "Hello from GENERATE @ %lld\n", (long long) last_time.tv_sec);
+        for (int index = 0; index < DATA_SIZE; index++)
+        {
+            pool->input[index] = rand() % BIN_SIZE;
+        }
 
         end_thread_block(THREAD_ID, lt);
 

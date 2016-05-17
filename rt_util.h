@@ -13,11 +13,14 @@
 #include <string.h>
 #include <pthread.h>
 
-#define MAX_SAFE_STACK  (8*1024)
+#define MAX_SAFE_STACK  (32*1024)
 #define NSEC_PER_SEC    (1000000000)
 
-#define INVALID_TIME 0
-#define INVALID_THREAD 0x0
+#define DATA_SIZE       (8*1024)
+#define BIN_SIZE        256
+
+#define INVALID_TIME    0
+#define INVALID_THREAD  0x0
 
 typedef enum JOB_STATE
 {
@@ -27,7 +30,8 @@ typedef enum JOB_STATE
     JOB_STATE_ERROR
 } JOB_STATE;
 
-typedef struct last_thread {
+typedef struct last_thread
+{
     pthread_mutex_t mutex;
     unsigned long start_time;
     unsigned long end_time;
@@ -35,48 +39,61 @@ typedef struct last_thread {
     JOB_STATE state;
 } last_thread;
 
-typedef struct thread_params {
+typedef struct thread_pool
+{
+    unsigned char *input;
+    unsigned char *output;
+    unsigned long *count;
+} thread_pool;
+
+typedef struct thread_params
+{
     unsigned int priority;
     unsigned int delay;
     unsigned long ndelay;
     unsigned long interval;
     unsigned char thread_id;
     last_thread *lt;
+    thread_pool *tp;
 } thread_params;
 
-inline void
+void
 schedule(pid_t pid, int policy, const struct sched_param param);
 
-inline void
+void
 increment_time(struct timespec *t, unsigned long tm);
 
-inline void
+void
 increment_time_u(struct timespec *t, unsigned long tm);
 
-inline void
+void
 copy_time(struct timespec *src, struct timespec *dest);
 
-inline void
+void
 normalise_time(struct timespec *t);
 
-inline void
+void
 stack_prefault(void);
 
 struct thread_params *
 create_thread_params(unsigned int priority, unsigned int delay,
                      unsigned long ndelay, unsigned long interval,
-                     unsigned char thread_id, last_thread *lt);
+                     unsigned char thread_id, last_thread *lt,
+                     thread_pool *pool);
 
 struct last_thread *
 create_last_thread();
 
-inline void
+struct thread_pool *
+create_thread_pool();
+
+void
 dump_last_thread_data(unsigned int thread_id, char *message, last_thread *lt);
 
-inline void
+void
 begin_thread_block(unsigned int thread_id, last_thread *lt);
 
-inline void
+void
 end_thread_block(unsigned int thread_id, last_thread *lt);
 
 #endif

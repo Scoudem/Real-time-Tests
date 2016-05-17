@@ -18,6 +18,8 @@ execute(void *arg)
 
     last_thread *lt         = tp->lt;
 
+    thread_pool *pool       = tp->tp;
+
     struct timespec last_time;
     struct sched_param param;
 
@@ -30,11 +32,13 @@ execute(void *arg)
         exit(-2);
     }
 
-    stack_prefault();
+    //stack_prefault();
 
     clock_gettime(CLOCK_MONOTONIC, &last_time);
 
     last_time.tv_sec += DELAY;
+
+    printf("%p\n", pool);
 
     while(1)
     {
@@ -44,7 +48,25 @@ execute(void *arg)
         begin_thread_block(THREAD_ID, lt);
 
         /* Processing */
-        fprintf(stdout, "Hello from EXECUTE @ %lld\n", (long long) last_time.tv_sec);
+
+        /* Reset to 0 */
+        memset(pool->count, 0, BIN_SIZE);
+
+        /* Fill bins */
+        for (int index = 0; index < DATA_SIZE; index++)
+        {
+            pool->count[pool->output[index]] += 1;
+        }
+
+        unsigned char largest = 0;
+        for(int index = 0; index < BIN_SIZE; index++)
+        {
+            if (pool->count[index] > pool->count[largest])
+                largest = index;
+        }
+
+        fprintf(stdout, "largest bin is %d with %d entries\n",
+                largest, pool->count[largest]);
 
         end_thread_block(THREAD_ID, lt);
 

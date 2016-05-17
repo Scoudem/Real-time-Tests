@@ -18,6 +18,8 @@ process(void *arg)
 
     last_thread *lt         = tp->lt;
 
+    thread_pool *pool       = tp->tp;
+
     struct timespec last_time;
     struct sched_param param;
 
@@ -30,11 +32,13 @@ process(void *arg)
         exit(-2);
     }
 
-    stack_prefault();
+    //stack_prefault();
 
     clock_gettime(CLOCK_MONOTONIC, &last_time);
 
     last_time.tv_sec += DELAY;
+
+    printf("%p\n", pool);
 
     while(1)
     {
@@ -44,12 +48,11 @@ process(void *arg)
         begin_thread_block(THREAD_ID, lt);
 
         /* Processing */
-        fprintf(stdout, "Hello from PROCESS @ %lld\n", (long long) last_time.tv_sec);
 
-        struct timespec fail_time;
-        clock_gettime(CLOCK_MONOTONIC, &fail_time);
-        fail_time.tv_sec += 2;
-        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &fail_time, NULL);
+        for (int index = 0; index < DATA_SIZE; index++)
+        {
+            pool->output[index] = pool->input[index];
+        }
 
         end_thread_block(THREAD_ID, lt);
 

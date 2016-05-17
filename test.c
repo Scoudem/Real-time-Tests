@@ -31,17 +31,16 @@ main(int argc, char *argv[])
                   *params_process,
                   *params_execute;
 
-    last_thread *lt = create_last_thread();
+    last_thread *lt   = create_last_thread();
+    thread_pool *pool = create_thread_pool();
 
-    params_generate = create_thread_params(40, 1, -1, 3000000000, 1, lt);
-    params_process  = create_thread_params(40, 2, -1, 3000000000, 2, lt);
-    params_execute  = create_thread_params(40, 3, -1, 3000000000, 3, lt);
+    params_generate = create_thread_params(40, 1, -1, 3000000000, 1, lt, pool);
+    params_process  = create_thread_params(40, 2, -1, 3000000000, 2, lt, pool);
+    params_execute  = create_thread_params(40, 3, -1, 3000000000, 3, lt, pool);
 
     thread_start(&thread_generate, NULL, &generate, params_generate);
     thread_start(&thread_process, NULL, &process, params_process);
     thread_start(&thread_execute, NULL, &execute, params_execute);
-
-    fprintf(stdout, "All thread have started.\n");
 
     thread_join(thread_generate, NULL);
     thread_join(thread_process, NULL);
