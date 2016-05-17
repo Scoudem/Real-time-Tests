@@ -8,11 +8,15 @@ generate(void *arg)
 {
     thread_params *tp = (thread_params*)arg;
 
-    int PRIORITY  = tp->priority,
-        DELAY     = tp->delay;
+    unsigned char THREAD_ID = tp->thread_id;
 
-    long INTERVAL = tp->interval,
-         NDELAY   = tp->ndelay;
+    unsigned int PRIORITY   = tp->priority,
+                 DELAY      = tp->delay;
+
+    unsigned long INTERVAL  = tp->interval,
+                  NDELAY    = tp->ndelay;
+
+    last_thread *lt         = tp->lt;
 
     struct timespec last_time;
     struct sched_param param;
@@ -37,11 +41,15 @@ generate(void *arg)
         /* Wait untill next shot */
         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &last_time, NULL);
 
+        begin_thread_block(THREAD_ID, lt);
+
         /* Processing */
         fprintf(stdout, "Hello from GENERATE @ %lld\n", (long long) last_time.tv_sec);
 
+        end_thread_block(THREAD_ID, lt);
+
         /* Calculate next shot */
-        increment_time(&last_time, INTERVAL);
+        increment_time_u(&last_time, INTERVAL);
         normalise_time(&last_time);
 
     }

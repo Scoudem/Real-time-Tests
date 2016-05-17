@@ -31,9 +31,11 @@ main(int argc, char *argv[])
                   *params_process,
                   *params_execute;
 
-    params_generate = create_thread_params(40, 1, -1, 3000000000);
-    params_process  = create_thread_params(40, 2, -1, 3000000000);
-    params_execute  = create_thread_params(40, 3, -1, 3000000000);
+    last_thread *lt = create_last_thread();
+
+    params_generate = create_thread_params(40, 1, -1, 3000000000, 1, lt);
+    params_process  = create_thread_params(40, 2, -1, 3000000000, 2, lt);
+    params_execute  = create_thread_params(40, 3, -1, 3000000000, 3, lt);
 
     thread_start(&thread_generate, NULL, &generate, params_generate);
     thread_start(&thread_process, NULL, &process, params_process);
