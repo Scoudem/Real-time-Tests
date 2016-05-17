@@ -133,7 +133,8 @@ begin_thread_block(unsigned int thread_id, last_thread *lt)
     {
         /* We were unable to achieve a lock, that probably means that
            the previous task was not done. */
-        dump_last_thread_data(thread_id, "unable to achieve lock", lt);
+        dump_last_thread_data(thread_id,
+            "unable to achieve lock in begin_thread_block", lt);
 
         lt->state = JOB_STATE_ERROR;
         pthread_exit((void*)-1);
@@ -142,13 +143,29 @@ begin_thread_block(unsigned int thread_id, last_thread *lt)
     /* Check the last job state */
     JOB_STATE state = lt->state;
 
+    switch (state)
+    {
+        case JOB_STATE_DONE:
+        case JOB_STATE_UNKOWN:
+            break;
+        case JOB_STATE_BUSY:
+            dump_last_thread_data(thread_id, "previous thread not done", lt);
+            goto fail;
+        case JOB_STATE_ERROR:
+            dump_last_thread_data(thread_id, "previous thread failed", lt);
+            goto fail;
+            break;
+        default:
+        fail:
+            lt->state = JOB_STATE_ERROR;
+            pthread_mutex_unlock(&lt->mutex);
+            pthread_exit((void*)-1);
+            break;
+
+    }
     if (state != JOB_STATE_DONE)
     {
-        /* This thread detected that the previous thread was not done. */
-        dump_last_thread_data(thread_id, "previous thread not done", lt);
 
-       lt->state = JOB_STATE_ERROR;
-       pthread_exit((void*)-1);
     }
 
     struct timespec ets;
@@ -163,13 +180,14 @@ begin_thread_block(unsigned int thread_id, last_thread *lt)
 }
 
 void
-end_thread_block(unsigned int thread_id, last_thread *lt)
+end_thread_block(unsigned int thread_id, unsigned long interval, last_thread *lt)
 {
     if (pthread_mutex_trylock(&lt->mutex) != 0)
     {
         /* We were unable to achieve a lock, that probably means that
            the previous task was not done. */
-        dump_last_thread_data(thread_id, "unable to achieve lock", lt);
+        dump_last_thread_data(thread_id,
+            "unable to achieve lock in end_thread_block", lt);
 
         lt->state = JOB_STATE_ERROR;
         pthread_exit((void*)-1);
@@ -179,10 +197,22 @@ end_thread_block(unsigned int thread_id, last_thread *lt)
     clock_gettime(CLOCK_MONOTONIC, &ets);
     unsigned long end_time = ets.tv_nsec;
 
+    // TODO: normalise_time
+    unsigned long elapsed_time = end_time - lt->start_time;
+    printf("Job %d took %lu nsec\n", thread_id, elapsed_time);
+    // if (elapsed_time > interval)
+    // {
+    //     /* Task elapsed dealine time */
+    //     dump_last_thread_data(thread_id,
+    //         "time fault, elapsed deadline time", lt);
+    //
+    //     lt->state = JOB_STATE_ERROR;
+    //     pthread_exit((void*)-1);
+    // }
+
     /* All clear, set our own state */
     lt->state = JOB_STATE_DONE;
     lt->end_time = end_time;
     pthread_mutex_unlock(&lt->mutex);
 
-    printf("Job %d took %lu nsec\n", thread_id, lt->end_time - lt->start_time);
 }

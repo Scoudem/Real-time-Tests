@@ -94,6 +94,6 @@ void
 begin_thread_block(unsigned int thread_id, last_thread *lt);
 
 void
-end_thread_block(unsigned int thread_id, last_thread *lt);
+end_thread_block(unsigned int thread_id, unsigned long interval, last_thread *lt);
 
 #endif

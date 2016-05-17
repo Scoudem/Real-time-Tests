@@ -36,9 +36,10 @@ execute(void *arg)
 
     clock_gettime(CLOCK_MONOTONIC, &last_time);
 
-    last_time.tv_sec += DELAY;
-
-    printf("%p\n", pool);
+    if (DELAY > -1)
+        last_time.tv_sec += DELAY;
+    else
+        last_time.tv_nsec += NDELAY;
 
     while(1)
     {
@@ -50,7 +51,7 @@ execute(void *arg)
         /* Processing */
 
         /* Reset to 0 */
-        memset(pool->count, 0, BIN_SIZE);
+        memset(pool->count, 0, BIN_SIZE * sizeof(unsigned long));
 
         /* Fill bins */
         for (int index = 0; index < DATA_SIZE; index++)
@@ -65,10 +66,10 @@ execute(void *arg)
                 largest = index;
         }
 
-        fprintf(stdout, "largest bin is %d with %d entries\n",
+        fprintf(stdout, "largest bin is %d with %lu entries\n",
                 largest, pool->count[largest]);
 
-        end_thread_block(THREAD_ID, lt);
+        end_thread_block(THREAD_ID, INTERVAL, lt);
 
         /* Calculate next shot */
         increment_time_u(&last_time, INTERVAL);

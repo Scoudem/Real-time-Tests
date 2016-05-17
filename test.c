@@ -18,6 +18,8 @@ if (pthread_join(THREAD, RET)) {\
     return 2;\
 }
 
+#define INT_TIME 400000
+
 int
 main(int argc, char *argv[])
 {
@@ -34,9 +36,9 @@ main(int argc, char *argv[])
     last_thread *lt   = create_last_thread();
     thread_pool *pool = create_thread_pool();
 
-    params_generate = create_thread_params(40, 1, -1, 3000000000, 1, lt, pool);
-    params_process  = create_thread_params(40, 2, -1, 3000000000, 2, lt, pool);
-    params_execute  = create_thread_params(40, 3, -1, 3000000000, 3, lt, pool);
+    params_generate = create_thread_params(40, -1, INT_TIME,     INT_TIME * 3, 1, lt, pool);
+    params_process  = create_thread_params(40, -1, INT_TIME * 2, INT_TIME * 3, 2, lt, pool);
+    params_execute  = create_thread_params(40, -1, INT_TIME * 3, INT_TIME * 3, 3, lt, pool);
 
     thread_start(&thread_generate, NULL, &generate, params_generate);
     thread_start(&thread_process, NULL, &process, params_process);

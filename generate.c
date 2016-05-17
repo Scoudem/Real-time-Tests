@@ -37,9 +37,10 @@ generate(void *arg)
 
     clock_gettime(CLOCK_MONOTONIC, &last_time);
 
-    last_time.tv_sec += DELAY;
-
-    printf("%p\n", pool);
+    if (DELAY > -1)
+        last_time.tv_sec += DELAY;
+    else
+        last_time.tv_nsec += NDELAY;
 
     while(1)
     {
@@ -54,7 +55,7 @@ generate(void *arg)
             pool->input[index] = rand() % BIN_SIZE;
         }
 
-        end_thread_block(THREAD_ID, lt);
+        end_thread_block(THREAD_ID, INTERVAL, lt);
 
         /* Calculate next shot */
         increment_time_u(&last_time, INTERVAL);
