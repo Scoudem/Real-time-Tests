@@ -61,11 +61,13 @@ main(int argc, char *argv[])
     thread_start(&thread_process, NULL, &process, params_process);
     thread_start(&thread_execute, NULL, &execute, params_execute);
 
-    thread_join(thread_generate, NULL);
+    thread_stats *ts1, *ts2, *ts3;
+
+    thread_join(thread_generate, (void**)&ts1);
     fprintf(stdout, "Thread 1 joined.\n");
-    thread_join(thread_process, NULL);
+    thread_join(thread_process, (void**)&ts2);
     fprintf(stdout, "Thread 2 joined.\n");
-    thread_join(thread_execute, NULL);
+    thread_join(thread_execute, (void**)&ts3);
     fprintf(stdout, "Thread 3 joined.\n");
 
     free(params_generate);
@@ -73,6 +75,10 @@ main(int argc, char *argv[])
     free(params_execute);
 
     fprintf(stdout, "Execution finished.\n");
+
+    fprintf(stdout, "Thread 1 average time: %llu nsec\n", ts1->average_time);
+    fprintf(stdout, "Thread 2 average time: %llu nsec\n", ts2->average_time);
+    fprintf(stdout, "Thread 3 average time: %llu nsec\n", ts3->average_time);
 
     return 0;
 }

@@ -20,6 +20,8 @@ process(void *arg)
 
     thread_pool *pool       = tp->tp;
 
+    thread_stats *ts        = malloc(sizeof *ts);
+
     struct timespec last_time;
     struct sched_param param;
 
@@ -46,7 +48,9 @@ process(void *arg)
         /* Wait untill next shot */
         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &last_time, NULL);
 
-        begin_thread_block(THREAD_ID, lt);
+        unsigned int result = begin_thread_block(THREAD_ID, lt);
+        if (!result)
+            break;
 
         /* Processing */
 
@@ -55,13 +59,15 @@ process(void *arg)
             pool->output[index] = pool->input[index];
         }
 
-        end_thread_block(THREAD_ID, INTERVAL, lt);
+        ts->average_time += end_thread_block(THREAD_ID, INTERVAL, lt);
 
         /* Calculate next shot */
         increment_time_u(&last_time, INTERVAL);
         normalise_time(&last_time);
-
     }
+
+    ts->average_time = ts->average_time / lt->max_iterations;
+    pthread_exit(ts);
 
     return NULL;
 }

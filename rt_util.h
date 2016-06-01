@@ -59,6 +59,11 @@ typedef struct thread_params
     thread_pool *tp;
 } thread_params;
 
+typedef struct thread_stats
+{
+    unsigned long long average_time;
+} thread_stats;
+
 void
 schedule(pid_t pid, int policy, const struct sched_param param);
 
@@ -92,10 +97,10 @@ create_thread_pool();
 void
 dump_last_thread_data(unsigned int thread_id, char *message, last_thread *lt);
 
-void
+unsigned int
 begin_thread_block(unsigned int thread_id, last_thread *lt);
 
-void
+unsigned long
 end_thread_block(unsigned int thread_id, unsigned long interval, last_thread *lt);
 
 #endif

@@ -22,7 +22,6 @@ increment_time_u(struct timespec *t, unsigned long tm)
     t->tv_nsec += tm;
 }
 
-
 void
 copy_time(struct timespec *src, struct timespec *dest)
 {
@@ -125,7 +124,7 @@ dump_last_thread_data(unsigned int thread_id, char *message, last_thread *lt)
     );
 }
 
-void
+unsigned int
 begin_thread_block(unsigned int thread_id, last_thread *lt)
 {
     if (pthread_mutex_trylock(&lt->mutex) != 0)
@@ -136,7 +135,7 @@ begin_thread_block(unsigned int thread_id, last_thread *lt)
             "unable to achieve lock in begin_thread_block", lt);
 
         lt->state = JOB_STATE_ERROR;
-        pthread_exit((void*)-1);
+        return 0;
     };
 
     /* Check the last job state */
@@ -158,7 +157,7 @@ begin_thread_block(unsigned int thread_id, last_thread *lt)
     fail:
         lt->state = JOB_STATE_ERROR;
         pthread_mutex_unlock(&lt->mutex);
-        pthread_exit((void*)-1);
+        return 0;
         break;
     }
 
@@ -170,14 +169,14 @@ begin_thread_block(unsigned int thread_id, last_thread *lt)
         dump_last_thread_data(thread_id, "A thread was skipped", lt);
         lt->state = JOB_STATE_ERROR;
         pthread_mutex_unlock(&lt->mutex);
-        pthread_exit((void*)-1);
+        return 0;
     }
 
     if (lt->current_iterations > lt->max_iterations)
     {
         lt->thread_id = thread_id;
         pthread_mutex_unlock(&lt->mutex);
-        pthread_exit((void*)0);
+        return 0;
     }
 
     /* All clear, set our own state */
@@ -185,9 +184,11 @@ begin_thread_block(unsigned int thread_id, last_thread *lt)
     clock_gettime(CLOCK_MONOTONIC, lt->start_time);
     lt->thread_id = thread_id;
     pthread_mutex_unlock(&lt->mutex);
+
+    return 1;
 }
 
-void
+unsigned long
 end_thread_block(unsigned int thread_id, unsigned long interval, last_thread *lt)
 {
     if (pthread_mutex_trylock(&lt->mutex) != 0)
@@ -198,7 +199,7 @@ end_thread_block(unsigned int thread_id, unsigned long interval, last_thread *lt
             "unable to achieve lock in end_thread_block", lt);
 
         lt->state = JOB_STATE_ERROR;
-        pthread_exit((void*)-1);
+        return 0;
     }
 
     /* Get current time and substract start time to get elapsed time */
@@ -211,7 +212,7 @@ end_thread_block(unsigned int thread_id, unsigned long interval, last_thread *lt
         dump_last_thread_data(thread_id, "did not reach deadline", lt);
 
         lt->state = JOB_STATE_ERROR;
-        pthread_exit((void*)-1);
+        return 0;
     }
 
     printf("Job %d took %lu nsec\n", thread_id, elapsed_time);
@@ -224,6 +225,5 @@ end_thread_block(unsigned int thread_id, unsigned long interval, last_thread *lt
 
     pthread_mutex_unlock(&lt->mutex);
 
-    fflush(stdout);
-
+    return elapsed_time;
 }
