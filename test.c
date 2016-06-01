@@ -19,7 +19,7 @@ if (pthread_join(THREAD, RET)) {\
     return 2;\
 }
 
-#define INT_TIME 400000
+#define INT_TIME 5000000
 
 int
 main(int argc, char *argv[])

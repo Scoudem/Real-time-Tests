@@ -32,10 +32,11 @@ generate(void *arg)
         exit(-2);
     }
 
-    //stack_prefault();
     srand(time(NULL));
 
     clock_gettime(CLOCK_MONOTONIC, &last_time);
+
+    printf("Started thread %d\n", THREAD_ID);
 
     if (DELAY > -1)
         last_time.tv_sec += DELAY;

@@ -32,7 +32,7 @@ execute(void *arg)
         exit(-2);
     }
 
-    //stack_prefault();
+    printf("Started thread %d\n", THREAD_ID);
 
     clock_gettime(CLOCK_MONOTONIC, &last_time);
 
@@ -66,8 +66,8 @@ execute(void *arg)
                 largest = index;
         }
 
-        fprintf(stdout, "largest bin is %d with %lu entries\n",
-                largest, pool->count[largest]);
+        // fprintf(stdout, "largest bin is %d with %lu entries\n",
+        //         largest, pool->count[largest]);
 
         end_thread_block(THREAD_ID, INTERVAL, lt);
 

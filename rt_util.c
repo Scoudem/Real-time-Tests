@@ -160,6 +160,17 @@ begin_thread_block(unsigned int thread_id, last_thread *lt)
         break;
     }
 
+    if (lt->thread_id != thread_id - 1 &&
+        lt->thread_id != thread_id + 2 &&
+        lt->thread_id != 0)
+    {
+        /* The previous thread is not the right one */
+        dump_last_thread_data(thread_id, "A thread was skipped", lt);
+        lt->state = JOB_STATE_ERROR;
+        pthread_mutex_unlock(&lt->mutex);
+        pthread_exit((void*)-1);
+    }
+
     /* All clear, set our own state */
     lt->state = JOB_STATE_BUSY;
     clock_gettime(CLOCK_MONOTONIC, lt->start_time);
@@ -199,5 +210,7 @@ end_thread_block(unsigned int thread_id, unsigned long interval, last_thread *lt
     /* All clear, set our own state */
     lt->state = JOB_STATE_DONE;
     pthread_mutex_unlock(&lt->mutex);
+
+    fflush(stdout);
 
 }

@@ -32,7 +32,7 @@ process(void *arg)
         exit(-2);
     }
 
-    //stack_prefault();
+    printf("Started thread %d\n", THREAD_ID);
 
     clock_gettime(CLOCK_MONOTONIC, &last_time);
 
