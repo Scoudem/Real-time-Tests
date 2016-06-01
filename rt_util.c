@@ -69,7 +69,7 @@ create_thread_params(unsigned int priority, unsigned int delay,
 }
 
 last_thread *
-create_last_thread()
+create_last_thread(unsigned int iterations)
 {
     last_thread *lt;
 
@@ -78,6 +78,8 @@ create_last_thread()
     lt->end_time = malloc(sizeof(struct timespec));
     lt->thread_id = INVALID_THREAD;
     lt->state = JOB_STATE_DONE;
+    lt->max_iterations = iterations;
+    lt->current_iterations = 0;
 
     /* Creates a mutex with the PTHREAD_PRIO_INHERIT attribute.
        This attribute is needed so that switches can happen based on
@@ -171,6 +173,13 @@ begin_thread_block(unsigned int thread_id, last_thread *lt)
         pthread_exit((void*)-1);
     }
 
+    if (lt->current_iterations > lt->max_iterations)
+    {
+        lt->thread_id = thread_id;
+        pthread_mutex_unlock(&lt->mutex);
+        pthread_exit((void*)0);
+    }
+
     /* All clear, set our own state */
     lt->state = JOB_STATE_BUSY;
     clock_gettime(CLOCK_MONOTONIC, lt->start_time);
@@ -209,6 +218,10 @@ end_thread_block(unsigned int thread_id, unsigned long interval, last_thread *lt
 
     /* All clear, set our own state */
     lt->state = JOB_STATE_DONE;
+
+    if (thread_id == 3)
+        lt->current_iterations += 1;
+
     pthread_mutex_unlock(&lt->mutex);
 
     fflush(stdout);

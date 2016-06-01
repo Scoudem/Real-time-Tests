@@ -24,6 +24,15 @@ if (pthread_join(THREAD, RET)) {\
 int
 main(int argc, char *argv[])
 {
+    if (argc < 3)
+    {
+        fprintf(stderr, "Not enough arguments. Usage: ./test <interval> <num_tests>\n");
+        exit(1);
+    }
+
+    int interval  = atoi(argv[1]),
+        num_tests = atoi(argv[2]);
+
     fprintf(stdout, "Starting execution.\n");
 
     pthread_t thread_generate,
@@ -34,18 +43,18 @@ main(int argc, char *argv[])
                   *params_process,
                   *params_execute;
 
-    last_thread *lt   = create_last_thread();
+    last_thread *lt   = create_last_thread(num_tests);
     thread_pool *pool = create_thread_pool();
 
     int max_prio = sched_get_priority_max(SCHED_FIFO);
     params_generate = create_thread_params(max_prio, -1,
-                                           INT_TIME, INT_TIME * 3,
+                                           interval, interval * 3,
                                            1, lt, pool);
     params_process  = create_thread_params(max_prio, -1,
-                                           INT_TIME * 2, INT_TIME * 3,
+                                           interval * 2, interval * 3,
                                            2, lt, pool);
     params_execute  = create_thread_params(max_prio, -1,
-                                           INT_TIME * 3, INT_TIME * 3,
+                                           interval * 3, interval * 3,
                                            3, lt, pool);
 
     thread_start(&thread_generate, NULL, &generate, params_generate);
@@ -53,8 +62,11 @@ main(int argc, char *argv[])
     thread_start(&thread_execute, NULL, &execute, params_execute);
 
     thread_join(thread_generate, NULL);
+    fprintf(stdout, "Thread 1 joined.\n");
     thread_join(thread_process, NULL);
+    fprintf(stdout, "Thread 2 joined.\n");
     thread_join(thread_execute, NULL);
+    fprintf(stdout, "Thread 3 joined.\n");
 
     free(params_generate);
     free(params_process);

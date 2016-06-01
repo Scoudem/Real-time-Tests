@@ -27,7 +27,7 @@ typedef enum JOB_STATE
     JOB_STATE_UNKOWN,
     JOB_STATE_DONE,
     JOB_STATE_BUSY,
-    JOB_STATE_ERROR
+    JOB_STATE_ERROR,
 } JOB_STATE;
 
 typedef struct last_thread
@@ -37,6 +37,8 @@ typedef struct last_thread
     struct timespec *end_time;
     unsigned char thread_id;
     JOB_STATE state;
+    unsigned int max_iterations;
+    unsigned int current_iterations;
 } last_thread;
 
 typedef struct thread_pool
@@ -82,7 +84,7 @@ create_thread_params(unsigned int priority, unsigned int delay,
                      thread_pool *pool);
 
 struct last_thread *
-create_last_thread();
+create_last_thread(unsigned int iterations);
 
 struct thread_pool *
 create_thread_pool();
