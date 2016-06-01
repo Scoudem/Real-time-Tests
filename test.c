@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <pthread.h>
+#include <sched.h>
 
 #include "rt_util.h"
 #include "generate.h"
@@ -36,9 +37,16 @@ main(int argc, char *argv[])
     last_thread *lt   = create_last_thread();
     thread_pool *pool = create_thread_pool();
 
-    params_generate = create_thread_params(40, -1, INT_TIME,     INT_TIME * 3, 1, lt, pool);
-    params_process  = create_thread_params(40, -1, INT_TIME * 2, INT_TIME * 3, 2, lt, pool);
-    params_execute  = create_thread_params(40, -1, INT_TIME * 3, INT_TIME * 3, 3, lt, pool);
+    int max_prio = sched_get_priority_max(SCHED_FIFO);
+    params_generate = create_thread_params(max_prio, -1,
+                                           INT_TIME, INT_TIME * 3,
+                                           1, lt, pool);
+    params_process  = create_thread_params(max_prio, -1,
+                                           INT_TIME * 2, INT_TIME * 3,
+                                           2, lt, pool);
+    params_execute  = create_thread_params(max_prio, -1,
+                                           INT_TIME * 3, INT_TIME * 3,
+                                           3, lt, pool);
 
     thread_start(&thread_generate, NULL, &generate, params_generate);
     thread_start(&thread_process, NULL, &process, params_process);

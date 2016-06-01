@@ -33,8 +33,8 @@ typedef enum JOB_STATE
 typedef struct last_thread
 {
     pthread_mutex_t mutex;
-    unsigned long start_time;
-    unsigned long end_time;
+    struct timespec *start_time;
+    struct timespec *end_time;
     unsigned char thread_id;
     JOB_STATE state;
 } last_thread;

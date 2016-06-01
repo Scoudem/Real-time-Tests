@@ -74,8 +74,8 @@ create_last_thread()
     last_thread *lt;
 
     lt = (struct last_thread *) malloc(sizeof(struct last_thread));
-    lt->start_time = INVALID_TIME;
-    lt->end_time = INVALID_TIME;
+    lt->start_time = malloc(sizeof(struct timespec));
+    lt->end_time = malloc(sizeof(struct timespec));
     lt->thread_id = INVALID_THREAD;
     lt->state = JOB_STATE_DONE;
 
@@ -85,7 +85,6 @@ create_last_thread()
     pthread_mutexattr_t attributes;
     pthread_mutexattr_init(&attributes);
     pthread_mutexattr_setprotocol(&attributes, PTHREAD_PRIO_INHERIT);
-    //pthread_mutexattr_settype(&attributes, PTHREAD_MUTEX_ERRORCHECK);
     pthread_mutex_init(&lt->mutex, &attributes);
 
     return lt;
@@ -116,12 +115,10 @@ dump_last_thread_data(unsigned int thread_id, char *message, last_thread *lt)
         stderr,
         "Thread %d: %s.\n"
         "Dumping last known data (can be wrong):\n"
-        " - start time:  %lu\n"
-        " - end time:    %lu\n"
         " - last thread: %d\n"
         " - last state:  %d\n"
         "Dump finished, stopping thread...\n",
-        thread_id, message, lt->start_time, lt->end_time,
+        thread_id, message,
         lt->thread_id, lt->state
     );
 }
@@ -145,36 +142,27 @@ begin_thread_block(unsigned int thread_id, last_thread *lt)
 
     switch (state)
     {
-        case JOB_STATE_DONE:
-        case JOB_STATE_UNKOWN:
-            break;
-        case JOB_STATE_BUSY:
-            dump_last_thread_data(thread_id, "previous thread not done", lt);
-            goto fail;
-        case JOB_STATE_ERROR:
-            dump_last_thread_data(thread_id, "previous thread failed", lt);
-            goto fail;
-            break;
-        default:
-        fail:
-            lt->state = JOB_STATE_ERROR;
-            pthread_mutex_unlock(&lt->mutex);
-            pthread_exit((void*)-1);
-            break;
-
+    case JOB_STATE_DONE:
+    case JOB_STATE_UNKOWN:
+        break;
+    case JOB_STATE_BUSY:
+        dump_last_thread_data(thread_id, "previous thread not done", lt);
+        goto fail;
+    case JOB_STATE_ERROR:
+        dump_last_thread_data(thread_id, "previous thread failed", lt);
+        goto fail;
+        break;
+    default:
+    fail:
+        lt->state = JOB_STATE_ERROR;
+        pthread_mutex_unlock(&lt->mutex);
+        pthread_exit((void*)-1);
+        break;
     }
-    if (state != JOB_STATE_DONE)
-    {
-
-    }
-
-    struct timespec ets;
-    clock_gettime(CLOCK_MONOTONIC, &ets);
 
     /* All clear, set our own state */
     lt->state = JOB_STATE_BUSY;
-    lt->start_time = ets.tv_nsec;
-    lt->end_time = INVALID_TIME;
+    clock_gettime(CLOCK_MONOTONIC, lt->start_time);
     lt->thread_id = thread_id;
     pthread_mutex_unlock(&lt->mutex);
 }
@@ -191,28 +179,25 @@ end_thread_block(unsigned int thread_id, unsigned long interval, last_thread *lt
 
         lt->state = JOB_STATE_ERROR;
         pthread_exit((void*)-1);
-    };
+    }
 
-    struct timespec ets;
-    clock_gettime(CLOCK_MONOTONIC, &ets);
-    unsigned long end_time = ets.tv_nsec;
+    /* Get current time and substract start time to get elapsed time */
+    clock_gettime(CLOCK_MONOTONIC, lt->end_time);
+    unsigned long elapsed_time = (lt->end_time->tv_sec  - lt->start_time->tv_sec) * 1.0e9 +
+                                 (lt->end_time->tv_nsec - lt->start_time->tv_nsec);
 
-    // TODO: normalise_time
-    unsigned long elapsed_time = end_time - lt->start_time;
+    if (elapsed_time > interval)
+    {
+        dump_last_thread_data(thread_id, "did not reach deadline", lt);
+
+        lt->state = JOB_STATE_ERROR;
+        pthread_exit((void*)-1);
+    }
+
     printf("Job %d took %lu nsec\n", thread_id, elapsed_time);
-    // if (elapsed_time > interval)
-    // {
-    //     /* Task elapsed dealine time */
-    //     dump_last_thread_data(thread_id,
-    //         "time fault, elapsed deadline time", lt);
-    //
-    //     lt->state = JOB_STATE_ERROR;
-    //     pthread_exit((void*)-1);
-    // }
 
     /* All clear, set our own state */
     lt->state = JOB_STATE_DONE;
-    lt->end_time = end_time;
     pthread_mutex_unlock(&lt->mutex);
 
 }
