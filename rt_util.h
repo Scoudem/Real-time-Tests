@@ -63,6 +63,9 @@ typedef struct thread_params
 
 typedef struct thread_stats
 {
+    unsigned long long interval;
+    unsigned long long min_time;
+    unsigned long long max_time;
     unsigned long long average_time;
     unsigned int times_sorted;
 } thread_stats;

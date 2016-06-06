@@ -240,7 +240,7 @@ end_thread_block(unsigned int thread_id, unsigned long interval, last_thread *lt
         return 0;
     }
 
-    printf("%d: %d: %lu\n", thread_id, lt->current_iterations, elapsed_time);
+    //printf("%d: %d: %lu: %g\n", thread_id, lt->current_iterations, elapsed_time, (double)elapsed_time / interval);
 
     /* All clear, set our own state */
     lt->state = JOB_STATE_DONE;

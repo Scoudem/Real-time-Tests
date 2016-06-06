@@ -51,11 +51,8 @@ sort(void *arg)
 
     stack_prefault();
 
-    if (DELAY > -1)
-        last_time.tv_sec += DELAY;
-    else
-        last_time.tv_nsec = NDELAY;
-
+    last_time.tv_sec = DELAY;
+    last_time.tv_nsec = NDELAY;
     normalise_time(&last_time);
 
     while(1)
@@ -76,7 +73,6 @@ sort(void *arg)
 
         if (pool->dirty)
         {
-            printf("Sorting %s\n", pool->current ? "output" : "input");
             ts->times_sorted += 1;
             qsort(target, DATA_SIZE, sizeof(*target), compare_char);
             pool->dirty = 0;

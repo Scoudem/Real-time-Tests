@@ -50,21 +50,23 @@ main(int argc, char *argv[])
     last_thread *lt   = create_last_thread(num_tests);
     thread_pool *pool = create_thread_pool();
 
+    /* Start after 1 second + interval * thread_id */
     struct timespec current_time;
     clock_gettime(CLOCK_MONOTONIC, &current_time);
+    current_time.tv_sec += 1;
 
     int max_prio = sched_get_priority_max(SCHED_FIFO);
-    params_generate = create_thread_params(max_prio, -1,
-                                           current_time.tv_nsec + interval * 10, interval * 3,
+    params_generate = create_thread_params(max_prio, current_time.tv_sec,
+                                           current_time.tv_nsec + interval * 1, interval * 3,
                                            1, lt, pool);
-    params_process  = create_thread_params(max_prio, -1,
-                                           current_time.tv_nsec + interval * 11, interval * 3,
+    params_process  = create_thread_params(max_prio, current_time.tv_sec,
+                                           current_time.tv_nsec + interval * 2, interval * 3,
                                            2, lt, pool);
-    params_execute  = create_thread_params(max_prio, -1,
-                                           current_time.tv_nsec + interval * 12, interval * 3,
+    params_execute  = create_thread_params(max_prio, current_time.tv_sec,
+                                           current_time.tv_nsec + interval * 3, interval * 3,
                                            3, lt, pool);
-    params_sort     = create_thread_params(max_prio - 1, -1,
-                                           current_time.tv_nsec + interval * 10, 10000,
+    params_sort     = create_thread_params(max_prio - 1, current_time.tv_sec,
+                                           current_time.tv_nsec + interval * 1, 1000,
                                            4, lt, pool);
 
     thread_start(&thread_generate, NULL, &generate, params_generate);
@@ -90,10 +92,12 @@ main(int argc, char *argv[])
 
     fprintf(stdout, "Execution finished.\n");
 
-    fprintf(stdout, "Thread generate average run time: %llu nsec\n", ts1->average_time);
-    fprintf(stdout, "Thread process average run time: %llu nsec\n", ts2->average_time);
-    fprintf(stdout, "Thread execute average run time: %llu nsec\n", ts3->average_time);
-    fprintf(stdout, "Thread sort times sorted: %d\n", ts4->times_sorted);
+    fprintf(stdout, "Completed %d iterations using %d items\n", num_tests, DATA_SIZE);
+    fprintf(stdout, "All time values in nsec\n");
+    fprintf(stdout, " - generate time (int, min, max, avg):\t%llu\t%llu\t%llu\t%llu\n",ts1->interval, ts1->min_time, ts1->max_time, ts1->average_time);
+    fprintf(stdout, " - process time (int, min, max, avg): \t%llu\t%llu\t%llu\t%llu\n",ts2->interval, ts2->min_time, ts2->max_time, ts2->average_time);
+    fprintf(stdout, " - Thread time (int, min, max, avg):  \t%llu\t%llu\t%llu\t%llu\n",ts3->interval, ts3->min_time, ts3->max_time, ts3->average_time);
+    fprintf(stdout, "Times sorted: %d (%g every iteration)\n", ts4->times_sorted, (double)ts4->times_sorted/num_tests);
 
     return 0;
 }

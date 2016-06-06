@@ -1,6 +1,7 @@
 #include "execute.h"
 
 #include <pthread.h>
+#include <limits.h>
 #include "rt_util.h"
 
 void *
@@ -21,6 +22,9 @@ execute(void *arg)
     thread_pool *pool       = tp->tp;
 
     thread_stats *ts        = malloc(sizeof *ts);
+    ts->interval = INTERVAL;
+    ts->min_time = ULLONG_MAX;
+    ts->max_time = 0;
 
     struct timespec last_time;
     struct sched_param param;
@@ -38,11 +42,8 @@ execute(void *arg)
     clock_gettime(CLOCK_MONOTONIC, &last_time);
     printf("Started thread %d @ %zu\n", THREAD_ID, last_time.tv_nsec);
 
-    if (DELAY > -1)
-        last_time.tv_sec += DELAY;
-    else
-        last_time.tv_nsec = NDELAY;
-
+    last_time.tv_sec = DELAY;
+    last_time.tv_nsec = NDELAY;
     normalise_time(&last_time);
 
     while(1)
@@ -75,7 +76,10 @@ execute(void *arg)
                 largest = index;
         }
 
-        ts->average_time += end_thread_block(THREAD_ID, INTERVAL, lt, 1);
+        unsigned long long elapsed_time = end_thread_block(THREAD_ID, INTERVAL, lt, 1);
+        ts->average_time += elapsed_time;
+        if (elapsed_time > ts->max_time) ts->max_time = elapsed_time;
+        if (elapsed_time < ts->min_time) ts->min_time = elapsed_time;
 
         /* Calculate next shot */
         increment_time_u(&last_time, INTERVAL);
