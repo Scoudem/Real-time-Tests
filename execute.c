@@ -33,22 +33,24 @@ execute(void *arg)
         perror("mlockall failed");
         exit(-2);
     }
-
-    printf("Started thread %d\n", THREAD_ID);
+    stack_prefault();
 
     clock_gettime(CLOCK_MONOTONIC, &last_time);
+    printf("Started thread %d @ %zu\n", THREAD_ID, last_time.tv_nsec);
 
     if (DELAY > -1)
         last_time.tv_sec += DELAY;
     else
-        last_time.tv_nsec += NDELAY;
+        last_time.tv_nsec = NDELAY;
+
+    normalise_time(&last_time);
 
     while(1)
     {
         /* Wait untill next shot */
         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &last_time, NULL);
 
-        unsigned int result = begin_thread_block(THREAD_ID, lt);
+        unsigned int result = begin_thread_block(THREAD_ID, lt, 1);
         if (!result)
             break;
 
@@ -56,6 +58,9 @@ execute(void *arg)
 
         /* Reset to 0 */
         memset(pool->count, 0, BIN_SIZE * sizeof(unsigned long));
+
+        /* the current array is the unprocessed one */
+        pool->current = 0;
 
         /* Fill bins */
         for (int index = 0; index < DATA_SIZE; index++)
@@ -70,7 +75,7 @@ execute(void *arg)
                 largest = index;
         }
 
-        ts->average_time += end_thread_block(THREAD_ID, INTERVAL, lt);
+        ts->average_time += end_thread_block(THREAD_ID, INTERVAL, lt, 1);
 
         /* Calculate next shot */
         increment_time_u(&last_time, INTERVAL);

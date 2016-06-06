@@ -101,7 +101,8 @@ create_thread_pool()
     tp->input  = (unsigned char *) calloc(DATA_SIZE, sizeof(unsigned char));
     tp->output = (unsigned char *) calloc(DATA_SIZE, sizeof(unsigned char));
     tp->count  = (unsigned long *) calloc(BIN_SIZE,  sizeof(unsigned long));
-
+    tp->current = 0;
+    tp->dirty = 1;
     return tp;
 }
 
@@ -125,71 +126,95 @@ dump_last_thread_data(unsigned int thread_id, char *message, last_thread *lt)
 }
 
 unsigned int
-begin_thread_block(unsigned int thread_id, last_thread *lt)
+begin_thread_block(unsigned int thread_id, last_thread *lt, int do_checks)
 {
-    if (pthread_mutex_trylock(&lt->mutex) != 0)
-    {
-        /* We were unable to achieve a lock, that probably means that
-           the previous task was not done. */
-        dump_last_thread_data(thread_id,
-            "unable to achieve lock in begin_thread_block", lt);
 
-        lt->state = JOB_STATE_ERROR;
-        return 0;
-    };
+    if (do_checks)
+    {
+        if (pthread_mutex_trylock(&lt->mutex) != 0)
+        {
+            /* We were unable to achieve a lock, that probably means that
+            the previous task was not done. */
+            dump_last_thread_data(thread_id,
+                "unable to achieve lock in begin_thread_block", lt);
+
+            lt->state = JOB_STATE_ERROR;
+            return 0;
+        }
+    }
 
     /* Check the last job state */
     JOB_STATE state = lt->state;
 
-    switch (state)
+    if (do_checks)
     {
-    case JOB_STATE_DONE:
-    case JOB_STATE_UNKOWN:
-        break;
-    case JOB_STATE_BUSY:
-        dump_last_thread_data(thread_id, "previous thread not done", lt);
-        goto fail;
-    case JOB_STATE_ERROR:
-        dump_last_thread_data(thread_id, "previous thread failed", lt);
-        goto fail;
-        break;
-    default:
-    fail:
-        lt->state = JOB_STATE_ERROR;
-        pthread_mutex_unlock(&lt->mutex);
+        switch (state)
+        {
+            case JOB_STATE_DONE:
+            case JOB_STATE_UNKOWN:
+                break;
+            case JOB_STATE_BUSY:
+                dump_last_thread_data(thread_id, "previous thread not done", lt);
+                goto fail;
+            case JOB_STATE_ERROR:
+                dump_last_thread_data(thread_id, "previous thread failed", lt);
+                goto fail;
+                break;
+            default:
+            fail:
+                if (do_checks)
+                {
+                    lt->state = JOB_STATE_ERROR;
+                    pthread_mutex_unlock(&lt->mutex);
+                }
+                return 0;
+            break;
+        }
+    }
+    else if (state == JOB_STATE_ERROR)
+    {
         return 0;
-        break;
     }
 
-    if (lt->thread_id != thread_id - 1 &&
-        lt->thread_id != thread_id + 2 &&
-        lt->thread_id != 0)
+    if (do_checks)
     {
-        /* The previous thread is not the right one */
-        dump_last_thread_data(thread_id, "A thread was skipped", lt);
-        lt->state = JOB_STATE_ERROR;
-        pthread_mutex_unlock(&lt->mutex);
-        return 0;
+        if (lt->thread_id != thread_id - 1 &&
+            lt->thread_id != thread_id + 2 &&
+            lt->thread_id != 0)
+        {
+            /* The previous thread is not the right one */
+            dump_last_thread_data(thread_id, "A thread was skipped", lt);
+            lt->state = JOB_STATE_ERROR;
+            pthread_mutex_unlock(&lt->mutex);
+            return 0;
+        }
     }
 
     if (lt->current_iterations > lt->max_iterations)
     {
-        lt->thread_id = thread_id;
-        pthread_mutex_unlock(&lt->mutex);
+        if (do_checks)
+        {
+            lt->thread_id = thread_id;
+            pthread_mutex_unlock(&lt->mutex);
+        }
+
         return 0;
     }
 
     /* All clear, set our own state */
-    lt->state = JOB_STATE_BUSY;
-    clock_gettime(CLOCK_MONOTONIC, lt->start_time);
-    lt->thread_id = thread_id;
-    pthread_mutex_unlock(&lt->mutex);
+    if (do_checks)
+    {
+        lt->state = JOB_STATE_BUSY;
+        clock_gettime(CLOCK_MONOTONIC, lt->start_time);
+        lt->thread_id = thread_id;
+        pthread_mutex_unlock(&lt->mutex);
+    }
 
     return 1;
 }
 
 unsigned long
-end_thread_block(unsigned int thread_id, unsigned long interval, last_thread *lt)
+end_thread_block(unsigned int thread_id, unsigned long interval, last_thread *lt, int do_checks)
 {
     if (pthread_mutex_trylock(&lt->mutex) != 0)
     {
@@ -215,7 +240,7 @@ end_thread_block(unsigned int thread_id, unsigned long interval, last_thread *lt
         return 0;
     }
 
-    printf("Job %d took %lu nsec\n", thread_id, elapsed_time);
+    printf("%d: %d: %lu\n", thread_id, lt->current_iterations, elapsed_time);
 
     /* All clear, set our own state */
     lt->state = JOB_STATE_DONE;

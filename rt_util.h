@@ -16,7 +16,7 @@
 #define MAX_SAFE_STACK  (32*1024)
 #define NSEC_PER_SEC    (1000000000)
 
-#define DATA_SIZE       (8*1024)
+#define DATA_SIZE       (12*1024)
 #define BIN_SIZE        256
 
 #define INVALID_TIME    0
@@ -46,6 +46,8 @@ typedef struct thread_pool
     unsigned char *input;
     unsigned char *output;
     unsigned long *count;
+    unsigned char current;
+    unsigned char dirty;
 } thread_pool;
 
 typedef struct thread_params
@@ -62,6 +64,7 @@ typedef struct thread_params
 typedef struct thread_stats
 {
     unsigned long long average_time;
+    unsigned int times_sorted;
 } thread_stats;
 
 void
@@ -98,9 +101,9 @@ void
 dump_last_thread_data(unsigned int thread_id, char *message, last_thread *lt);
 
 unsigned int
-begin_thread_block(unsigned int thread_id, last_thread *lt);
+begin_thread_block(unsigned int thread_id, last_thread *lt, int do_checks);
 
 unsigned long
-end_thread_block(unsigned int thread_id, unsigned long interval, last_thread *lt);
+end_thread_block(unsigned int thread_id, unsigned long interval, last_thread *lt, int do_checks);
 
 #endif

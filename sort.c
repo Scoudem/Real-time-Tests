@@ -1,10 +1,18 @@
 #include "generate.h"
 
 #include <pthread.h>
+#include <stdlib.h>
 #include "rt_util.h"
 
+static int compare_char(const void *this, const void *that)
+{
+    char *ti = (char*) this;
+    char *ta = (char*) that;
+    return *ti - *ta;
+}
+
 void *
-generate(void *arg)
+sort(void *arg)
 {
     thread_params *tp = (thread_params*)arg;
 
@@ -21,6 +29,7 @@ generate(void *arg)
     thread_pool *pool       = tp->tp;
 
     thread_stats *ts        = malloc(sizeof *ts);
+    ts->times_sorted = 0;
 
     struct timespec last_time;
     struct sched_param param;
@@ -35,10 +44,12 @@ generate(void *arg)
     }
 
     srand(time(NULL));
-    stack_prefault();
+
 
     clock_gettime(CLOCK_MONOTONIC, &last_time);
     printf("Started thread %d @ %zu\n", THREAD_ID, last_time.tv_nsec);
+
+    stack_prefault();
 
     if (DELAY > -1)
         last_time.tv_sec += DELAY;
@@ -52,18 +63,27 @@ generate(void *arg)
         /* Wait untill next shot */
         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &last_time, NULL);
 
-        unsigned int result = begin_thread_block(THREAD_ID, lt, 1);
+        unsigned int result = begin_thread_block(THREAD_ID, lt, 0);
         if (!result)
             break;
 
         /* Processing */
-        for (int index = 0; index < DATA_SIZE; index++)
+        unsigned char *target = NULL;
+        if (pool->current == 0)
+            target = pool->input;
+        else
+            target = pool->output;
+
+        if (pool->dirty)
         {
-            pool->input[index] = rand() % BIN_SIZE;
-            pool->dirty = 1;
+            printf("Sorting %s\n", pool->current ? "output" : "input");
+            ts->times_sorted += 1;
+            qsort(target, DATA_SIZE, sizeof(*target), compare_char);
+            pool->dirty = 0;
         }
 
-        ts->average_time += end_thread_block(THREAD_ID, INTERVAL, lt, 1);
+        /* Sorting does not need all checks since it is in between */
+        // ts->average_time += end_thread_block(THREAD_ID, INTERVAL, lt, 0);
 
         /* Calculate next shot */
         increment_time_u(&last_time, INTERVAL);
