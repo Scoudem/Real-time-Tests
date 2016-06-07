@@ -4,4 +4,7 @@
 void *
 sort(void *);
 
+void *
+is_sorted(void *);
+
 #endif

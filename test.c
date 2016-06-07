@@ -8,14 +8,6 @@
 #include "execute.h"
 #include "sort.h"
 
-
-#define INTERVAL_GENERATE   1000000
-#define INTERVAL_PROCESS     500000
-#define INTERVAL_EXECUTE     500000
-#define INTERVAL_SORT          1000
-
-#define TOTAL_INTERVAL INTERVAL_GENERATE + INTERVAL_PROCESS + INTERVAL_EXECUTE
-
 #define thread_start(THREAD, P_ARG, FUNC, ARG)\
 if (pthread_create(THREAD, P_ARG, FUNC, ARG)) {\
     fprintf(stderr, "Error creating thread\n");\
@@ -47,12 +39,14 @@ main(int argc, char *argv[])
     pthread_t thread_generate,
               thread_process,
               thread_execute,
-              thread_sort;
+              thread_sort,
+              thread_is_sort;
 
     thread_params *params_generate,
                   *params_process,
                   *params_execute,
-                  *params_sort;
+                  *params_sort,
+                  *params_is_sort;
 
     last_thread *lt   = create_last_thread(num_tests);
     thread_pool *pool = create_thread_pool();
@@ -82,13 +76,19 @@ main(int argc, char *argv[])
         current_time.tv_nsec + INTERVAL_GENERATE,
         INTERVAL_SORT, 4, lt, pool
     );
+    params_is_sort = create_thread_params(
+        max_prio - 2, current_time.tv_sec,
+        current_time.tv_nsec + INTERVAL_GENERATE,
+        INTERVAL_IS_SORT, 5, lt, pool
+    );
 
     thread_start(&thread_generate, NULL, &generate, params_generate);
     thread_start(&thread_process,  NULL, &process, params_process);
     thread_start(&thread_execute,  NULL, &execute, params_execute);
     thread_start(&thread_sort,     NULL, &sort, params_sort);
+    thread_start(&thread_is_sort,  NULL, &is_sorted, params_is_sort);
 
-    thread_stats *ts1, *ts2, *ts3, *ts4;
+    thread_stats *ts1, *ts2, *ts3, *ts4, *ts5;
 
     thread_join(thread_generate, (void**)&ts1);
     fprintf(stdout, "Thread 1 joined.\n");
@@ -98,11 +98,14 @@ main(int argc, char *argv[])
     fprintf(stdout, "Thread 3 joined.\n");
     thread_join(thread_sort, (void**)&ts4);
     fprintf(stdout, "Thread 4 joined.\n");
+    thread_join(thread_is_sort, (void**)&ts5);
+    fprintf(stdout, "Thread 5 joined.\n");
 
     free(params_generate);
     free(params_process);
     free(params_execute);
     free(params_sort);
+    free(params_is_sort);
 
     printf("Execution finished.\n===================\n");
 
@@ -117,6 +120,7 @@ main(int argc, char *argv[])
     printf(" - process (int, min, max, avg):\t%llu\t%llu\t%llu\t%llu\t(%llu microsec)\n",ts2->interval, ts2->min_jitter, ts2->max_jitter, ts2->average_jitter, ts2->average_jitter / 1000);
     printf(" - execute (int, min, max, avg):\t%llu\t%llu\t%llu\t%llu\t(%llu microsec)\n",ts3->interval, ts3->min_jitter, ts3->max_jitter, ts3->average_jitter, ts3->average_jitter / 1000);
     printf("Times sorted: %d (%g every iteration)\n", ts4->times_sorted, (double)ts4->times_sorted/num_tests);
+    printf("Times found unsorted: %d (%g every iteration)\n", ts5->times_is_sorted, (double)ts5->times_is_sorted/num_tests);
 
     return 0;
 }

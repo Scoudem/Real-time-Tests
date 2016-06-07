@@ -22,6 +22,13 @@
 #define INVALID_TIME    0
 #define INVALID_THREAD  0x0
 
+#define INTERVAL_GENERATE   1000000
+#define INTERVAL_PROCESS     700000
+#define INTERVAL_EXECUTE     500000
+#define INTERVAL_SORT          1000
+#define INTERVAL_IS_SORT       1000
+#define TOTAL_INTERVAL INTERVAL_GENERATE + INTERVAL_PROCESS + INTERVAL_EXECUTE
+
 typedef enum JOB_STATE
 {
     JOB_STATE_UNKOWN,
@@ -48,6 +55,7 @@ typedef struct thread_pool
     unsigned long *count;
     unsigned char current;
     unsigned char dirty;
+    unsigned char is_sorted;
 } thread_pool;
 
 typedef struct thread_params
@@ -71,6 +79,7 @@ typedef struct thread_stats
     unsigned long long max_jitter;
     unsigned long long average_jitter;
     unsigned int times_sorted;
+    unsigned int times_is_sorted;
 } thread_stats;
 
 void

@@ -1,7 +1,7 @@
 TARGET = test
 LIBS = -lm -pthread
 CC = gcc
-CFLAGS = -std=gnu11 -g -Wall -O2
+CFLAGS = -std=gnu11 -g -Wall
 
 .PHONY: default all clean
 

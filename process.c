@@ -76,7 +76,15 @@ process(void *arg)
         /* Processing */
         for (int index = 0; index < DATA_SIZE; index++)
         {
-            pool->output[index] = pool->input[index];
+            int result = 0;
+            int item = pool->input[index];
+
+            if (item < 64) result = 63;
+            else if (item >= 64 && item < 128) result = 127;
+            else if (item >= 128 && item < 192) result = 191;
+            else if (item >= 192) result = 255;
+
+            pool->output[index] = result;
             pool->dirty = 1;
         }
 

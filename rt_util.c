@@ -110,6 +110,7 @@ create_thread_pool()
     tp->count  = (unsigned long *) calloc(BIN_SIZE,  sizeof(unsigned long));
     tp->current = 0;
     tp->dirty = 1;
+    tp->is_sorted = 0;
     return tp;
 }
 
@@ -247,7 +248,7 @@ end_thread_block(unsigned int thread_id, unsigned long interval, last_thread *lt
         return 0;
     }
 
-    //printf("%d: %d: %lu: %g\n", thread_id, lt->current_iterations, elapsed_time, (double)elapsed_time / interval);
+    printf("%d: %d: %lu\n", thread_id, lt->current_iterations, elapsed_time);
 
     /* All clear, set our own state */
     lt->state = JOB_STATE_DONE;
