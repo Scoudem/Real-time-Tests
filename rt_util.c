@@ -29,6 +29,13 @@ copy_time(struct timespec *src, struct timespec *dest)
         dest->tv_sec = src->tv_sec;
 }
 
+long long
+between_time(struct timespec *early, struct timespec *late)
+{
+    return (late->tv_sec  - early->tv_sec) * 1.0e9 +
+           (late->tv_nsec - early->tv_nsec);
+}
+
 void
 normalise_time(struct timespec *t)
 {
@@ -234,8 +241,8 @@ end_thread_block(unsigned int thread_id, unsigned long interval, last_thread *lt
 
     if (elapsed_time > interval)
     {
+        printf("FAIL: %lu > %lu\n", elapsed_time, interval);
         dump_last_thread_data(thread_id, "did not reach deadline", lt);
-
         lt->state = JOB_STATE_ERROR;
         return 0;
     }

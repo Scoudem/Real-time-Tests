@@ -67,6 +67,9 @@ typedef struct thread_stats
     unsigned long long min_time;
     unsigned long long max_time;
     unsigned long long average_time;
+    unsigned long long min_jitter;
+    unsigned long long max_jitter;
+    unsigned long long average_jitter;
     unsigned int times_sorted;
 } thread_stats;
 
@@ -81,6 +84,9 @@ increment_time_u(struct timespec *t, unsigned long tm);
 
 void
 copy_time(struct timespec *src, struct timespec *dest);
+
+long long
+between_time(struct timespec *early, struct timespec *late);
 
 void
 normalise_time(struct timespec *t);

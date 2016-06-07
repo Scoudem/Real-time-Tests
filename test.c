@@ -9,6 +9,13 @@
 #include "sort.h"
 
 
+#define INTERVAL_GENERATE   1000000
+#define INTERVAL_PROCESS     500000
+#define INTERVAL_EXECUTE     500000
+#define INTERVAL_SORT          1000
+
+#define TOTAL_INTERVAL INTERVAL_GENERATE + INTERVAL_PROCESS + INTERVAL_EXECUTE
+
 #define thread_start(THREAD, P_ARG, FUNC, ARG)\
 if (pthread_create(THREAD, P_ARG, FUNC, ARG)) {\
     fprintf(stderr, "Error creating thread\n");\
@@ -50,24 +57,31 @@ main(int argc, char *argv[])
     last_thread *lt   = create_last_thread(num_tests);
     thread_pool *pool = create_thread_pool();
 
-    /* Start after 1 second + interval * thread_id */
     struct timespec current_time;
     clock_gettime(CLOCK_MONOTONIC, &current_time);
     current_time.tv_sec += 1;
 
     int max_prio = sched_get_priority_max(SCHED_FIFO);
-    params_generate = create_thread_params(max_prio, current_time.tv_sec,
-                                           current_time.tv_nsec + interval * 1, interval * 3,
-                                           1, lt, pool);
-    params_process  = create_thread_params(max_prio, current_time.tv_sec,
-                                           current_time.tv_nsec + interval * 2, interval * 3,
-                                           2, lt, pool);
-    params_execute  = create_thread_params(max_prio, current_time.tv_sec,
-                                           current_time.tv_nsec + interval * 3, interval * 3,
-                                           3, lt, pool);
-    params_sort     = create_thread_params(max_prio - 1, current_time.tv_sec,
-                                           current_time.tv_nsec + interval * 1, 1000,
-                                           4, lt, pool);
+    params_generate = create_thread_params(
+        max_prio, current_time.tv_sec,
+        current_time.tv_nsec,
+        TOTAL_INTERVAL, 1, lt, pool
+    );
+    params_process = create_thread_params(
+        max_prio, current_time.tv_sec,
+        current_time.tv_nsec + INTERVAL_GENERATE,
+        TOTAL_INTERVAL, 2, lt, pool
+    );
+    params_execute = create_thread_params(
+        max_prio, current_time.tv_sec,
+        current_time.tv_nsec + INTERVAL_GENERATE + INTERVAL_PROCESS,
+        TOTAL_INTERVAL, 3, lt, pool
+    );
+    params_sort = create_thread_params(
+        max_prio - 1, current_time.tv_sec,
+        current_time.tv_nsec + INTERVAL_GENERATE,
+        INTERVAL_SORT, 4, lt, pool
+    );
 
     thread_start(&thread_generate, NULL, &generate, params_generate);
     thread_start(&thread_process,  NULL, &process, params_process);
@@ -90,14 +104,19 @@ main(int argc, char *argv[])
     free(params_execute);
     free(params_sort);
 
-    fprintf(stdout, "Execution finished.\n");
+    printf("Execution finished.\n===================\n");
 
-    fprintf(stdout, "Completed %d iterations using %d items\n", num_tests, DATA_SIZE);
-    fprintf(stdout, "All time values in nsec\n");
-    fprintf(stdout, " - generate time (int, min, max, avg):\t%llu\t%llu\t%llu\t%llu\n",ts1->interval, ts1->min_time, ts1->max_time, ts1->average_time);
-    fprintf(stdout, " - process time (int, min, max, avg): \t%llu\t%llu\t%llu\t%llu\n",ts2->interval, ts2->min_time, ts2->max_time, ts2->average_time);
-    fprintf(stdout, " - Thread time (int, min, max, avg):  \t%llu\t%llu\t%llu\t%llu\n",ts3->interval, ts3->min_time, ts3->max_time, ts3->average_time);
-    fprintf(stdout, "Times sorted: %d (%g every iteration)\n", ts4->times_sorted, (double)ts4->times_sorted/num_tests);
+    printf("Completed %d iterations using %d items\n", lt->current_iterations, DATA_SIZE);
+    printf("All time values in nsec\n");
+    printf("Elapsed time:\n");
+    printf(" - generte (int, min, max, avg):\t%llu\t%llu\t%llu\t%llu\t(%llu microsec)\n",ts1->interval, ts1->min_time, ts1->max_time, ts1->average_time, ts1->average_time / 1000);
+    printf(" - process (int, min, max, avg):\t%llu\t%llu\t%llu\t%llu\t(%llu microsec)\n",ts2->interval, ts2->min_time, ts2->max_time, ts2->average_time, ts2->average_time / 1000);
+    printf(" - execute (int, min, max, avg):\t%llu\t%llu\t%llu\t%llu\t(%llu microsec)\n",ts3->interval, ts3->min_time, ts3->max_time, ts3->average_time, ts3->average_time / 1000);
+    printf("Idle time:\n");
+    printf(" - generte (int, min, max, avg):\t%llu\t%llu\t%llu\t%llu\t(%llu microsec)\n",ts1->interval, ts1->min_jitter, ts1->max_jitter, ts1->average_jitter, ts1->average_jitter / 1000);
+    printf(" - process (int, min, max, avg):\t%llu\t%llu\t%llu\t%llu\t(%llu microsec)\n",ts2->interval, ts2->min_jitter, ts2->max_jitter, ts2->average_jitter, ts2->average_jitter / 1000);
+    printf(" - execute (int, min, max, avg):\t%llu\t%llu\t%llu\t%llu\t(%llu microsec)\n",ts3->interval, ts3->min_jitter, ts3->max_jitter, ts3->average_jitter, ts3->average_jitter / 1000);
+    printf("Times sorted: %d (%g every iteration)\n", ts4->times_sorted, (double)ts4->times_sorted/num_tests);
 
     return 0;
 }
