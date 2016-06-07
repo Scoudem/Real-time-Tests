@@ -27,6 +27,8 @@ process(void *arg)
     ts->max_time = 0;
     ts->min_jitter = ULLONG_MAX;
     ts->max_jitter = 0;
+    ts->min_wrong = ULONG_MAX;
+    ts->max_wrong = 0;
 
     struct timespec last_time;
     struct sched_param param;
@@ -72,21 +74,50 @@ process(void *arg)
 
         /* the current array is the processed one */
         pool->current = 1;
+        int num_not_sorted = 0;
+
+        int part_size = DATA_SIZE / NUM_PARTS;
+
 
         /* Processing */
-        for (int index = 0; index < DATA_SIZE; index++)
+        for (int part = 0; part < NUM_PARTS; part++)
         {
-            int result = 0;
-            int item = pool->input[index];
+            int sorted_to = part_size * part;
+            for (int index = part_size * part; index < part_size * (part + 1); index++)
+            {
+                if (index != part_size * (part + 1) - 1)
+                {
+                    if (pool->input[index] > pool->input[index + 1])
+                    {
+                        //fprintf(stderr, "%d > %d\n", pool->input[index], pool->input[index + 1]);
+                        num_not_sorted += 1;
+                    }
+                    else
+                    {
+                        int sorted = 1;
 
-            if (item < 64) result = 63;
-            else if (item >= 64 && item < 128) result = 127;
-            else if (item >= 128 && item < 192) result = 191;
-            else if (item >= 192) result = 255;
+                        for (int j = index; j >= sorted_to; j--)
+                        {
+                            if (pool->input[index] < pool->input[j])
+                            {
+                                num_not_sorted += 1;
+                                sorted = 0;
+                                break;
+                            }
+                        }
 
-            pool->output[index] = result;
-            pool->dirty = 1;
+                        if (sorted) sorted_to = index;
+                    }
+                }
+
+                pool->output[index] = pool->input[index];
+                pool->dirty = 1;
+            }
         }
+
+        ts->average_wrong += num_not_sorted;
+        if (num_not_sorted > ts->max_wrong) ts->max_wrong = num_not_sorted;
+        if (num_not_sorted < ts->min_wrong) ts->min_wrong = num_not_sorted;
 
         elapsed_time = end_thread_block(THREAD_ID, INTERVAL, lt, 1);
         ts->average_time += elapsed_time;
@@ -94,6 +125,7 @@ process(void *arg)
         if (elapsed_time < ts->min_time) ts->min_time = elapsed_time;
     }
 
+    ts->average_wrong /= lt->max_iterations;
     ts->average_time = ts->average_time / lt->max_iterations;
     ts->average_jitter /= lt->max_iterations;
     pthread_exit(ts);

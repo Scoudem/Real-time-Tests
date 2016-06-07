@@ -4,8 +4,6 @@
 #include <stdlib.h>
 #include "rt_util.h"
 
-#define NUM_PARTS 10000
-
 static int compare_char(const void *this, const void *that)
 {
     char *ti = (char*) this;
@@ -64,44 +62,37 @@ sort(void *arg)
         /* Wait untill next shot */
         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &last_time, NULL);
 
+        /* Calculate next shot */
+        increment_time_u(&last_time, INTERVAL);
+        normalise_time(&last_time);
+
         unsigned int result = begin_thread_block(THREAD_ID, lt, 0);
         if (!result)
             break;
 
         /* Processing */
-        unsigned char *target = NULL;
-        if (pool->current == 0)
-            target = pool->input;
-        else
-            target = pool->output;
-
-        // if (pool->dirty)
-        // {
-        //     ts->times_sorted += 1;
-        //     qsort(target, DATA_SIZE, sizeof(*target), compare_char);
-        //     pool->dirty = 0;
-        // }
+        unsigned char *target = pool->input;
+        // if (pool->current == 0)
+        //     target = pool->input;
+        // else
+        //     target = pool->output;
 
         /* Sort partial */
         if (!pool->is_sorted)
         {
-            ts->times_sorted += 1;
             qsort(target + part_size * part, part_size, sizeof(*target), compare_char);
             part += 1;
         }
 
-        if (part == NUM_PARTS)
+        if (part >= NUM_PARTS)
         {
             part = 0;
+            ts->times_sorted += 1;
             pool->is_sorted = 1;
         }
 
         /* Sorting does not need all checks since it is in between */
         // ts->average_time += end_thread_block(THREAD_ID, INTERVAL, lt, 0);
-
-        /* Calculate next shot */
-        increment_time_u(&last_time, INTERVAL);
-        normalise_time(&last_time);
     }
 
     ts->average_time = ts->average_time / lt->max_iterations;
@@ -158,18 +149,22 @@ is_sorted(void *arg)
         /* Wait untill next shot */
         clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &last_time, NULL);
 
+        /* Calculate next shot */
+        increment_time_u(&last_time, INTERVAL);
+        normalise_time(&last_time);
+
         unsigned int result = begin_thread_block(THREAD_ID, lt, 0);
         if (!result)
             break;
 
         /* Processing */
-        unsigned char *target = NULL;
-        if (pool->current == 0)
-            target = pool->input;
-        else
-            target = pool->output;
+        unsigned char *target = pool->input;
+        // if (pool->current == 0)
+        //     target = pool->input;
+        // else
+        //     target = pool->output;
 
-        if (!pool->is_sorted)
+        if (pool->is_sorted)
         {
             for (int i = 0; i < DATA_SIZE; i++)
             {
@@ -184,10 +179,6 @@ is_sorted(void *arg)
                 }
             }
         }
-
-        /* Calculate next shot */
-        increment_time_u(&last_time, INTERVAL);
-        normalise_time(&last_time);
     }
 
     ts->average_time = ts->average_time / lt->max_iterations;

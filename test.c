@@ -73,12 +73,12 @@ main(int argc, char *argv[])
     );
     params_sort = create_thread_params(
         max_prio - 1, current_time.tv_sec,
-        current_time.tv_nsec + INTERVAL_GENERATE,
+        current_time.tv_nsec,
         INTERVAL_SORT, 4, lt, pool
     );
     params_is_sort = create_thread_params(
         max_prio - 2, current_time.tv_sec,
-        current_time.tv_nsec + INTERVAL_GENERATE,
+        current_time.tv_nsec,
         INTERVAL_IS_SORT, 5, lt, pool
     );
 
@@ -109,18 +109,19 @@ main(int argc, char *argv[])
 
     printf("Execution finished.\n===================\n");
 
-    printf("Completed %d iterations using %d items\n", lt->current_iterations, DATA_SIZE);
-    printf("All time values in nsec\n");
-    printf("Elapsed time:\n");
-    printf(" - generte (int, min, max, avg):\t%llu\t%llu\t%llu\t%llu\t(%llu microsec)\n",ts1->interval, ts1->min_time, ts1->max_time, ts1->average_time, ts1->average_time / 1000);
-    printf(" - process (int, min, max, avg):\t%llu\t%llu\t%llu\t%llu\t(%llu microsec)\n",ts2->interval, ts2->min_time, ts2->max_time, ts2->average_time, ts2->average_time / 1000);
-    printf(" - execute (int, min, max, avg):\t%llu\t%llu\t%llu\t%llu\t(%llu microsec)\n",ts3->interval, ts3->min_time, ts3->max_time, ts3->average_time, ts3->average_time / 1000);
-    printf("Idle time:\n");
-    printf(" - generte (int, min, max, avg):\t%llu\t%llu\t%llu\t%llu\t(%llu microsec)\n",ts1->interval, ts1->min_jitter, ts1->max_jitter, ts1->average_jitter, ts1->average_jitter / 1000);
-    printf(" - process (int, min, max, avg):\t%llu\t%llu\t%llu\t%llu\t(%llu microsec)\n",ts2->interval, ts2->min_jitter, ts2->max_jitter, ts2->average_jitter, ts2->average_jitter / 1000);
-    printf(" - execute (int, min, max, avg):\t%llu\t%llu\t%llu\t%llu\t(%llu microsec)\n",ts3->interval, ts3->min_jitter, ts3->max_jitter, ts3->average_jitter, ts3->average_jitter / 1000);
-    printf("Times sorted: %d (%g every iteration)\n", ts4->times_sorted, (double)ts4->times_sorted/num_tests);
-    printf("Times found unsorted: %d (%g every iteration)\n", ts5->times_is_sorted, (double)ts5->times_is_sorted/num_tests);
+    fprintf(stderr, "Completed %d iterations using %d items\n", lt->current_iterations, DATA_SIZE);
+    fprintf(stderr, "All time values in nsec\n");
+    fprintf(stderr, "Elapsed time:\n");
+    fprintf(stderr, " - generte (run, min, max, avg):\t%d\t%llu\t%llu\t%llu\t(%llu microsec)\n",INTERVAL_GENERATE, ts1->min_time, ts1->max_time, ts1->average_time, ts1->average_time / 1000);
+    fprintf(stderr, " - process (run, min, max, avg):\t%d\t%llu\t%llu\t%llu\t(%llu microsec)\n",INTERVAL_PROCESS, ts2->min_time, ts2->max_time, ts2->average_time, ts2->average_time / 1000);
+    fprintf(stderr, " - execute (run, min, max, avg):\t%d\t%llu\t%llu\t%llu\t(%llu microsec)\n",INTERVAL_EXECUTE, ts3->min_time, ts3->max_time, ts3->average_time, ts3->average_time / 1000);
+    fprintf(stderr, "Idle time:\n");
+    fprintf(stderr, " - generte (int, min, max, avg):\t%llu\t%llu\t%llu\t%llu\t(%llu microsec)\n",ts1->interval, ts1->min_jitter, ts1->max_jitter, ts1->average_jitter, ts1->average_jitter / 1000);
+    fprintf(stderr, " - process (int, min, max, avg):\t%llu\t%llu\t%llu\t%llu\t(%llu microsec)\n",ts2->interval, ts2->min_jitter, ts2->max_jitter, ts2->average_jitter, ts2->average_jitter / 1000);
+    fprintf(stderr, " - execute (int, min, max, avg):\t%llu\t%llu\t%llu\t%llu\t(%llu microsec)\n",ts3->interval, ts3->min_jitter, ts3->max_jitter, ts3->average_jitter, ts3->average_jitter / 1000);
+    fprintf(stderr, "Times sorted: %d (%g every iteration)\n", ts4->times_sorted, (double)ts4->times_sorted/num_tests);
+    fprintf(stderr, "Times found unsorted: %d (%g every iteration)\n", ts5->times_is_sorted, (double)ts5->times_is_sorted/num_tests);
+    fprintf(stderr, "Wrong results (max, min, max, avg):\t%d\t%lu\t%lu\t%lu\n", DATA_SIZE, ts2->min_wrong, ts2->max_wrong, ts2->average_wrong);
 
     return 0;
 }

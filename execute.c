@@ -80,14 +80,8 @@ execute(void *arg)
         /* Fill bins */
         for (int index = 0; index < DATA_SIZE; index++)
         {
-            pool->count[pool->output[index]] += 1;
-        }
-
-        unsigned char largest = 0;
-        for(int index = 0; index < BIN_SIZE; index++)
-        {
-            if (pool->count[index] > pool->count[largest])
-                largest = index;
+            if (pool->output[index] > 128) pool->count[pool->output[index]] += 2;
+            else pool->count[pool->output[index]] += 3;
         }
 
         elapsed_time = end_thread_block(THREAD_ID, INTERVAL, lt, 1);
@@ -96,7 +90,7 @@ execute(void *arg)
         if (elapsed_time < ts->min_time) ts->min_time = elapsed_time;
     }
 
-    ts->average_time = ts->average_time / lt->max_iterations;
+    ts->average_time /= lt->max_iterations;
     ts->average_jitter /= lt->max_iterations;
     pthread_exit(ts);
 

@@ -198,7 +198,7 @@ begin_thread_block(unsigned int thread_id, last_thread *lt, int do_checks)
         }
     }
 
-    if (lt->current_iterations > lt->max_iterations)
+    if (lt->current_iterations >= lt->max_iterations)
     {
         if (do_checks)
         {

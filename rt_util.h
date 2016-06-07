@@ -18,15 +18,16 @@
 
 #define DATA_SIZE       (12*1024)
 #define BIN_SIZE        256
+#define NUM_PARTS       1000
 
 #define INVALID_TIME    0
 #define INVALID_THREAD  0x0
 
-#define INTERVAL_GENERATE   1000000
-#define INTERVAL_PROCESS     700000
+#define INTERVAL_GENERATE   2000000
+#define INTERVAL_PROCESS    1000000
 #define INTERVAL_EXECUTE     500000
-#define INTERVAL_SORT          1000
-#define INTERVAL_IS_SORT       1000
+#define INTERVAL_SORT          5000
+#define INTERVAL_IS_SORT       5000
 #define TOTAL_INTERVAL INTERVAL_GENERATE + INTERVAL_PROCESS + INTERVAL_EXECUTE
 
 typedef enum JOB_STATE
@@ -78,6 +79,9 @@ typedef struct thread_stats
     unsigned long long min_jitter;
     unsigned long long max_jitter;
     unsigned long long average_jitter;
+    unsigned long min_wrong;
+    unsigned long max_wrong;
+    unsigned long average_wrong;
     unsigned int times_sorted;
     unsigned int times_is_sorted;
 } thread_stats;
