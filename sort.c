@@ -60,11 +60,11 @@ sort(void *arg)
     while(1)
     {
         /* Wait untill next shot */
-        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &last_time, NULL);
+        // clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &last_time, NULL);
 
         /* Calculate next shot */
-        increment_time_u(&last_time, INTERVAL);
-        normalise_time(&last_time);
+        // increment_time_u(&last_time, INTERVAL);
+        // normalise_time(&last_time);
 
         unsigned int result = begin_thread_block(THREAD_ID, lt, 0);
         if (!result)
@@ -78,17 +78,25 @@ sort(void *arg)
         //     target = pool->output;
 
         /* Sort partial */
-        if (!pool->is_sorted)
+        if (pool->full_sort)
         {
-            qsort(target + part_size * part, part_size, sizeof(*target), compare_char);
-            part += 1;
-        }
-
-        if (part >= NUM_PARTS)
-        {
-            part = 0;
+            qsort(target, DATA_SIZE, sizeof(*target), compare_char);
             ts->times_sorted += 1;
-            pool->is_sorted = 1;
+        }
+        else
+        {
+            if (!pool->is_sorted)
+            {
+                qsort(target + part_size * part, part_size, sizeof(*target), compare_char);
+                part += 1;
+            }
+
+            if (part > NUM_PARTS)
+            {
+                part = 0;
+                ts->times_sorted += 1;
+                pool->is_sorted = 1;
+            }
         }
 
         /* Sorting does not need all checks since it is in between */
@@ -147,11 +155,11 @@ is_sorted(void *arg)
     while(1)
     {
         /* Wait untill next shot */
-        clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &last_time, NULL);
+        // clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &last_time, NULL);
 
         /* Calculate next shot */
-        increment_time_u(&last_time, INTERVAL);
-        normalise_time(&last_time);
+        // increment_time_u(&last_time, INTERVAL);
+        // normalise_time(&last_time);
 
         unsigned int result = begin_thread_block(THREAD_ID, lt, 0);
         if (!result)

@@ -31,8 +31,7 @@ main(int argc, char *argv[])
         exit(1);
     }
 
-    int interval  = atoi(argv[1]),
-        num_tests = atoi(argv[2]);
+    int num_tests = atoi(argv[2]);
 
     fprintf(stdout, "Starting execution.\n");
 
@@ -50,6 +49,9 @@ main(int argc, char *argv[])
 
     last_thread *lt   = create_last_thread(num_tests);
     thread_pool *pool = create_thread_pool();
+
+    pool->full_sort = 0;
+    // pool->full_sort = 1;
 
     struct timespec current_time;
     clock_gettime(CLOCK_MONOTONIC, &current_time);
@@ -71,13 +73,20 @@ main(int argc, char *argv[])
         current_time.tv_nsec + INTERVAL_GENERATE + INTERVAL_PROCESS,
         TOTAL_INTERVAL, 3, lt, pool
     );
+
     params_sort = create_thread_params(
         max_prio - 1, current_time.tv_sec,
         current_time.tv_nsec,
         INTERVAL_SORT, 4, lt, pool
     );
+    // params_sort = create_thread_params(
+    //     max_prio, current_time.tv_sec,
+    //     current_time.tv_nsec + INTERVAL_GENERATE,
+    //     TOTAL_INTERVAL, 4, lt, pool
+    // );
+
     params_is_sort = create_thread_params(
-        max_prio - 2, current_time.tv_sec,
+        max_prio - 20, current_time.tv_sec,
         current_time.tv_nsec,
         INTERVAL_IS_SORT, 5, lt, pool
     );

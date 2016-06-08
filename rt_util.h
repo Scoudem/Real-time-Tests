@@ -18,17 +18,19 @@
 
 #define DATA_SIZE       (12*1024)
 #define BIN_SIZE        256
-#define NUM_PARTS       1000
+#define NUM_PARTS       512
 
 #define INVALID_TIME    0
 #define INVALID_THREAD  0x0
 
-#define INTERVAL_GENERATE   2000000
+#define INTERVAL_GENERATE   1000000
 #define INTERVAL_PROCESS    1000000
 #define INTERVAL_EXECUTE     500000
-#define INTERVAL_SORT          5000
-#define INTERVAL_IS_SORT       5000
+#define INTERVAL_FULL_SORT   500000
+#define INTERVAL_SORT          1000
+#define INTERVAL_IS_SORT       1000
 #define TOTAL_INTERVAL INTERVAL_GENERATE + INTERVAL_PROCESS + INTERVAL_EXECUTE
+//#define TOTAL_INTERVAL INTERVAL_GENERATE + INTERVAL_PROCESS + INTERVAL_EXECUTE + INTERVAL_FULL_SORT
 
 typedef enum JOB_STATE
 {
@@ -57,6 +59,7 @@ typedef struct thread_pool
     unsigned char current;
     unsigned char dirty;
     unsigned char is_sorted;
+    unsigned char full_sort;
 } thread_pool;
 
 typedef struct thread_params

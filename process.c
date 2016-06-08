@@ -4,6 +4,13 @@
 #include <limits.h>
 #include "rt_util.h"
 
+static int compare_char(const void *this, const void *that)
+{
+    char *ti = (char*) this;
+    char *ta = (char*) that;
+    return *ti - *ta;
+}
+
 void *
 process(void *arg)
 {
@@ -78,7 +85,6 @@ process(void *arg)
 
         int part_size = DATA_SIZE / NUM_PARTS;
 
-
         /* Processing */
         for (int part = 0; part < NUM_PARTS; part++)
         {
@@ -89,7 +95,7 @@ process(void *arg)
                 {
                     if (pool->input[index] > pool->input[index + 1])
                     {
-                        //fprintf(stderr, "%d > %d\n", pool->input[index], pool->input[index + 1]);
+                        //fprintf(stderr, "%d,%d: %d > %d\n", index, index+1, pool->input[index], pool->input[index + 1]);
                         num_not_sorted += 1;
                     }
                     else
